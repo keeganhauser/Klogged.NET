@@ -23,7 +23,7 @@ namespace Klogged
         [Flags]
         public enum Options
         {
-            None = 0,
+            None = 0, // Note: all options should be a power of 2.
             Color = 1,
             Timestamp = 2,
         }
@@ -36,13 +36,26 @@ namespace Klogged
             Error,
         }
 
+        // ----------------------------------
+        //
+        //      CONSTRUCTORS
+        //
+        // ----------------------------------
+        #region Constructors
         public ConsoleLogger() : this(Options.None) { }
 
         public ConsoleLogger(Options options)
         {
             _optionsField = options;
         }
+        #endregion
 
+        // ----------------------------------
+        //
+        //      PUBLIC METHODS
+        //
+        // ----------------------------------
+        #region Public Methods
         public void Write<T>(T obj, LogLevel? logLevel = null)
         {
             StringBuilder sb = new StringBuilder();
@@ -132,13 +145,14 @@ namespace Klogged
             _logLevelColors[logLevel] = color;
         }
 
+        #endregion
 
-
-        /// <summary>
-        /// IDisposable implementation
-        /// </summary>
-        public void Dispose() { }
-
+        // ----------------------------------
+        //
+        //      PRIVATE METHODS
+        //
+        // ----------------------------------
+        #region Private Methods
         private ConsoleColor GetColor(string str)
         {
             for (int i = 0; i < _allColors.Length; i++)
@@ -151,5 +165,14 @@ namespace Klogged
 
             return _defaultFgColor;
         }
+
+        #endregion
+
+        #region IDisposable
+        /// <summary>
+        /// IDisposable implementation
+        /// </summary>
+        public void Dispose() { }
+        #endregion
     }
 }
