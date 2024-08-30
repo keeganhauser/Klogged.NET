@@ -1,7 +1,7 @@
 # Klogged.NET
 
 ## About
-Klogger is a basic logging library written in C# .NET Core 8.
+Klogged is a basic logging library written in C# .NET Core 8.
 
 ## Features
 - Different logger types
