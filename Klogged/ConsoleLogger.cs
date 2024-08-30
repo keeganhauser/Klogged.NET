@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Klogged
@@ -10,15 +11,36 @@ namespace Klogged
 
         private static readonly Dictionary<LogLevel, ConsoleColor> _logLevelColors = new()
         {
-            { LogLevel.Info,    ConsoleColor.DarkGray   },
-            { LogLevel.Debug,   ConsoleColor.White      },
+            { LogLevel.Info,    ConsoleColor.Gray       },
+            { LogLevel.Debug,   ConsoleColor.DarkGray   },
             { LogLevel.Warning, ConsoleColor.DarkYellow },
             { LogLevel.Error,   ConsoleColor.DarkRed    },
+        };
+
+        private static readonly Dictionary<LogLevel, string> _logLevelPrefixes = new()
+        {
+            { LogLevel.Info,    $"$({_logLevelColors[LogLevel.Info]})[Info]$(reset)"        },
+            { LogLevel.Debug,   $"$({_logLevelColors[LogLevel.Debug]})[Debug]$(reset)"      },
+            { LogLevel.Warning, $"$({_logLevelColors[LogLevel.Warning]})[Warning]$(reset)"  },
+            { LogLevel.Error,   $"$({_logLevelColors[LogLevel.Error]})[Error]$(reset)"      },
         };
 
         private static readonly ConsoleColor[] _allColors = (ConsoleColor[]) ConsoleColor.GetValues(typeof(ConsoleColor));
 
         private Options _optionsField;
+        private ConsoleColor _timestampColor = ConsoleColor.DarkGray;
+
+        [StringSyntax(StringSyntaxAttribute.DateTimeFormat)]
+        private string _timestampFormat = "HH:mm:ss";
+
+        [StringSyntax(StringSyntaxAttribute.DateTimeFormat)]
+        public string TimestampFormat
+        {
+            get => _timestampFormat;
+            set => _timestampFormat = value;
+        }
+
+        public Dictionary<LogLevel, ConsoleColor> LogLevelColors => _logLevelColors;
 
         [Flags]
         public enum Options
@@ -56,50 +78,41 @@ namespace Klogged
         //
         // ----------------------------------
         #region Public Methods
-        public void Write<T>(T obj, LogLevel? logLevel = null)
+        public void Write<T>(T obj)
         {
-            StringBuilder sb = new StringBuilder();
-
-            if (_optionsField.HasFlag(Options.Color) && logLevel.HasValue)
-            {
-                Console.ForegroundColor = _logLevelColors[logLevel.Value];
-
-                // TODO: Be able to modify background color
-                Console.BackgroundColor = _defaultBgColor;
-            }
-
-            if (_optionsField.HasFlag(Options.Timestamp))
-            {
-                sb.Append($"[{DateTime.Now.ToString("HH:mm:ss")}]");
-            }
-
-            sb.Append(obj);
-
-            Console.Write(sb);
-            Console.ResetColor();
+            WriteF($"$(reset){obj}\n");
         }
 
         /// <summary>
+        /// <para>
         /// Outputs a color formatted string to the console. To properly to change the color of the
-        /// output, use: $[COLOR]:[STRING]. If no color is specified at the start, a default value
+        /// output, use $(COLOR). If no color is specified at the start, a default value
         /// will be used. Whitespace is preserved.
+        /// </para>
         /// 
-        /// Example: I am red with $red:anger$white:!!!
+        /// <para>
+        /// Example: The string <c>"I am red with $(red)anger$(white)!!!"</c> turns to "I am red with anger!!!"
+        /// with "anger" being in red text, and everything else in white text.
+        /// </para>
+        /// 
         /// </summary>
-        /// <param name="str"></param>
         public void WriteF(string str)
         {
             // TODO: Make this function less janky and ugly lol
-            List<KeyValuePair<string, ConsoleColor>> messages = new();
-
-            Regex rx = new(@"\$(.*?):");
+            Regex rx = new(@"\$\((.*?)\)");
             MatchCollection matches = rx.Matches(str);
-            
+            Queue<(string Message, ConsoleColor Color)> messages = new(matches.Count + 1);
+
+            // Prepend timestamp (if enabled)
+            if (_optionsField.HasFlag(Options.Timestamp))
+            {
+                messages.Enqueue(new($"[{DateTime.Now.ToString(_timestampFormat)}]", _timestampColor));
+            }
+
             // On first match, see if there's anything at the beginning that wasn't formatted.
             if (matches.Count > 0 && matches.First().Index != 0)
             {
-                messages.Add(new(str.Substring(0, matches.First().Index), _defaultFgColor));
-
+                messages.Enqueue(new(str.Substring(0, matches.First().Index), _defaultFgColor));
             }
 
             // For all the matches, grab their string contents and assign the respective color to them
@@ -112,22 +125,25 @@ namespace Klogged
                     ? str.Substring(matches[i].Index + matches[i].Length, matches[i + 1].Index - (matches[i].Index + matches[i].Length))
                     : str.Substring(matches[i].Index + matches[i].Length);
 
-                messages.Add(new(contentStr, GetColor(colorStr)));
+                messages.Enqueue(new(contentStr, GetColor(colorStr)));
             }
 
-            foreach (var message in messages)
+            while (messages.Count > 0)
             {
-                Console.ForegroundColor = message.Value;
-                Console.Write($"{message.Key}");
+                var coloredMessage = messages.Dequeue();
+
+                // TODO: Save time not doing all the above for when Options.Color is disabled.
+                if (_optionsField.HasFlag(Options.Color)) 
+                    Console.ForegroundColor = coloredMessage.Color;
+                Console.Write($"{coloredMessage.Message}");
             }
-            Console.Write("\n");
             Console.ResetColor();
         }
 
-        public void Info<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Info]}:[Info] $white:{obj}\n");
-        public void Debug<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Debug]}:[Debug] $white:{obj}\n");
-        public void Warning<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Warning]}:[Warning] $white:{obj}\n");
-        public void Error<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Error]}:[Error] $white:{obj}\n");
+        public void Info<T>(T obj) => WriteF($"{_logLevelPrefixes[LogLevel.Info]} {obj}\n");
+        public void Debug<T>(T obj) => WriteF($"{_logLevelPrefixes[LogLevel.Debug]} {obj}\n");
+        public void Warning<T>(T obj) => WriteF($"{_logLevelPrefixes[LogLevel.Warning]} {obj}\n");
+        public void Error<T>(T obj) => WriteF($"{_logLevelPrefixes[LogLevel.Error]} {obj}\n");
 
 
         public void EnableOptions(Options options)
@@ -145,6 +161,11 @@ namespace Klogged
             _logLevelColors[logLevel] = color;
         }
 
+        public void SetLogLevelPrefix(LogLevel logLevel, string prefix)
+        {
+            _logLevelPrefixes[logLevel] = prefix;
+        }
+
         #endregion
 
         // ----------------------------------
@@ -153,13 +174,28 @@ namespace Klogged
         //
         // ----------------------------------
         #region Private Methods
+
+        /// <summary>
+        /// <para>
+        /// Get the ConsoleColor from respective string value. If the string is not a valid color,
+        /// then a default color will be returned.
+        /// </para>
+        /// 
+        /// <para>
+        /// Example: "red" returns ConsoleColor.Red.
+        /// </para>
+        /// </summary>
         private ConsoleColor GetColor(string str)
         {
-            for (int i = 0; i < _allColors.Length; i++)
+            foreach (ConsoleColor color in _allColors)
             {
-                if (str.Equals(_allColors[i].ToString(), StringComparison.OrdinalIgnoreCase))
+                if (str.Equals(color.ToString(), StringComparison.OrdinalIgnoreCase))
                 {
-                    return _allColors[i];
+                    return color;
+                }
+                else if (str.Equals("reset", StringComparison.OrdinalIgnoreCase))
+                {
+                    return _defaultFgColor;
                 }
             }
 
