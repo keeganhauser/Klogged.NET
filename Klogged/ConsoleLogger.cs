@@ -111,10 +111,11 @@ namespace Klogged
             Console.ResetColor();
         }
 
-        public void Info<T>(T obj) => Write($"[Info] {obj}\n", LogLevel.Info);
-        public void Debug<T>(T obj) => Write($"[Debug] {obj}\n", LogLevel.Debug);
-        public void Warning<T>(T obj) => Write($"[Warning] {obj}\n", LogLevel.Warning);
-        public void Error<T>(T obj) => Write($"[Error] {obj}\n", LogLevel.Error);
+        public void Info<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Info]}:[Info] $white:{obj}\n");
+        public void Debug<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Debug]}:[Debug] $white:{obj}\n");
+        public void Warning<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Warning]}:[Warning] $white:{obj}\n");
+        public void Error<T>(T obj) => WriteF($"${_logLevelColors[LogLevel.Error]}:[Error] $white:{obj}\n");
+
 
         public void EnableOptions(Options options)
         {

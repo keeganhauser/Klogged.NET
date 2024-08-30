@@ -6,8 +6,8 @@ namespace Klogged.Tests
     {
         static void Main(string[] args)
         {
-            //BasicTest();
-            ColorFormatTest();
+            BasicTest();
+            //ColorFormatTest();
         }
 
         static void BasicTest()
@@ -28,7 +28,7 @@ namespace Klogged.Tests
 
                 logger.Write("\n");
                 logger.EnableOptions(ConsoleLogger.Options.Timestamp);
-                logger.Info("Well would ya look at the time!");
+                //logger.Info("Well would ya look at the time!");
             }
         }
 
@@ -38,11 +38,11 @@ namespace Klogged.Tests
 
             //logger.WriteF("$green:hello!");
 
-            foreach (ConsoleColor color in (ConsoleColor[])ConsoleColor.GetValues(typeof(ConsoleColor)))
-            {
-                if (color == Console.BackgroundColor) continue;
-                logger.WriteF($"I've turned ${color}:{color}$white:!");
-            }
+            //foreach (ConsoleColor color in (ConsoleColor[])ConsoleColor.GetValues(typeof(ConsoleColor)))
+            //{
+            //    if (color == Console.BackgroundColor) continue;
+            //    logger.WriteF($"I've turned ${color}:{color}$white:!");
+            //}
         }
     }
 }

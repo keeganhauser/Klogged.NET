@@ -1,4 +1,4 @@
-# Klogged.NET
+# Klogged .NET
 
 ## About
 Klogged is a basic logging library written in C# .NET Core 8.
@@ -9,5 +9,7 @@ Klogged is a basic logging library written in C# .NET Core 8.
   - [ ] File logging
 - Logging options
   - [x] Colors in the console
-  - [ ] Log levels
-  - [ ] Message formatting (prefixes, colors, etc.)
+  - [x] Log levels
+  - Message formatting
+    - [x] Custom color formatting of strings
+    - [ ] Custom prefixes for messages
