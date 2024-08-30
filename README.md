@@ -1,4 +1,4 @@
-# Klogger.Net
+# Klogged.NET
 
 ## About
 Klogger is a basic logging library written in C# .NET Core 8.
